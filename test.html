@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🔔 Notification Test</title>
+</head>
+<body>
+  <h2>Test Push Notification Permission</h2>
+  <button id="notifyBtn">Enable Notifications</button>
+
+  <script>
+    document.getElementById("notifyBtn").addEventListener("click", async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        console.log("Permission result:", permission);
+
+        if (permission === "granted") {
+          new Notification("✅ Notifications enabled!", {
+            body: "You will now receive updates.",
+            icon: "https://cdn-icons-png.flaticon.com/512/1827/1827310.png"
+          });
+        } else {
+          alert("❌ You denied or blocked notifications.");
+        }
+      } catch (err) {
+        console.error("Error requesting notification:", err);
+      }
+    });
+  </script>
+</body>
+</html>

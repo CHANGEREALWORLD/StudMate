@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📚 Subject Planner - StudMate</title>
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
+
+  <!-- AOS -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: url('home(imp).jpg') no-repeat center center/cover;
+    }
+
+    body::before{
+        content: ' ';
+        position:absolute;
+        top:0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        backdrop-filter: blur(8px);
+        background-color: rgba(0,0,0,0.5);
+        z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      padding:40px;
+      max-width:850px;
+      margin: 40px auto;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      box-shadow: 0 10px 32px rgba(55,225,196,0.37);
+      color: white;
+      width:380px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .input-group {
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .input-group label {
+      margin-bottom: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .input-group input,
+    .input-group select {
+      padding: 0.7rem;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #000;
+      font-weight: 500;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.8rem;
+      background-color: white;
+      border: none;
+      color: black;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      transition: background 0.3s;
+    }
+
+    .btn:hover {
+      background: #ff4d4d;
+    }
+
+    .subject-list {
+      margin-top: 1rem;
+    }
+
+    .subject {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 5px 12px rgba(0,0,0,0.3);
+    }
+
+    .subject-info {
+      flex: 1;
+    }
+
+    .subject-info p {
+      margin: 0.2rem 0;
+    }
+
+    .subject-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .subject-actions button {
+      background: transparent;
+      border: none;
+      font-size: 1.2rem;
+      color: #ff4d4d;
+      cursor: pointer;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+      background: rgba(255,255,255,0.3);
+    }
+
+    .progress {
+      height: 100%;
+      background-color: rgb(11, 206, 11);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" data-aos="fade-up">
+    <h2 data-aos="zoom-in">📚 Subject Planner</h2>
+
+    <div class="input-group" data-aos="fade-right">
+      <label for="subjectSelect">Select Subject</label>
+      <select id="subjectSelect">
+        <option value="">-- Choose --</option>
+        <option>Data Structures</option>
+        <option>Operating Systems</option>
+        <option>DBMS</option>
+        <option>Web Development</option>
+        <option>DSA Practice</option>
+      </select>
+    </div>
+
+    <div class="input-group" data-aos="fade-left">
+      <label for="date">Scheduled Date</label>
+      <input type="date" id="date" />
+    </div>
+
+    <div class="input-group" data-aos="fade-left">
+      <label for="time">Scheduled Time</label>
+      <input type="time" id="time" />
+    </div>
+
+    <div class="input-group" data-aos="fade-left">
+      <label for="progress">Progress (%)</label>
+      <input type="number" id="progress" placeholder="e.g. 40" min="0" max="100" />
+    </div>
+
+    <button class="btn" id="addBtn" data-aos="zoom-in">➕ Add Subject</button>
+
+    <div class="subject-list" id="subjectList" data-aos="fade-up">
+      <!-- Subjects will show here -->
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+    import { 
+      getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc 
+    } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+    // 🔹 Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+      authDomain: "studmate-e1527.firebaseapp.com",
+      projectId: "studmate-e1527",
+      storageBucket: "studmate-e1527.appspot.com",
+      messagingSenderId: "156725135850",
+      appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const subjectSelect = document.getElementById('subjectSelect');
+    const dateInput = document.getElementById('date');
+    const timeInput = document.getElementById('time');
+    const progressInput = document.getElementById('progress');
+    const subjectList = document.getElementById('subjectList');
+    const addBtn = document.getElementById('addBtn');
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        loadSubjects();
+      } else {
+        alert("⚠️ Please login first.");
+        window.location.href = "login.html";
+      }
+    });
+
+    // ✅ Add Subject
+    addBtn.addEventListener("click", async () => {
+      if (!currentUser) return;
+
+      const name = subjectSelect.value;
+      const date = dateInput.value;
+      const time = timeInput.value;
+      const progress = parseInt(progressInput.value);
+
+      if (name && date && time && !isNaN(progress) && progress >= 0 && progress <= 100) {
+        await addDoc(collection(db, "profiles", currentUser.uid, "Subject"), {
+          name, date, time, progress
+        });
+        console.log("✅ Subject saved:", { name, date, time, progress });
+
+        subjectSelect.value = "";
+        dateInput.value = "";
+        timeInput.value = "";
+        progressInput.value = "";
+      } else {
+        alert("⚠️ Please fill all fields correctly.");
+      }
+    });
+
+    // ✅ Load Subjects
+    function loadSubjects() {
+      const q = collection(db, "profiles", currentUser.uid, "Subject");
+      onSnapshot(q, (snapshot) => {
+        subjectList.innerHTML = "";
+        snapshot.forEach((docSnap) => {
+          const subj = docSnap.data();
+          const div = document.createElement("div");
+          div.className = "subject"; // ✅ FIXED lowercase
+          div.innerHTML = `
+            <div class="subject-info">
+              <p><strong>${subj.name}</strong></p>
+              <p>🗓️ ${subj.date} 🕒 ${subj.time}</p>
+              <div class="progress-bar">
+                <div class="progress" style="width: ${subj.progress}%;"></div>
+              </div>
+              <p>Progress: ${subj.progress}%</p>
+            </div>
+            <div class="subject-actions">
+              <button onclick="deleteSubject('${docSnap.id}')"><i class="ri-delete-bin-line"></i></button>
+            </div>
+          `;
+          subjectList.appendChild(div);
+        });
+      });
+    }
+
+    // ✅ Delete Subject
+    window.deleteSubject = async function(id) {
+      await deleteDoc(doc(db, "profiles", currentUser.uid, "Subject", id));
+    };
+
+  </script>
+
+  <script>
+    AOS.init();
+  </script>
+</body>
+</html>

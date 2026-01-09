@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile</title>
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #2b5876, #4e4376);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      background: url("home(imp).jpg") no-repeat center center/cover;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .profile-container {
+      background: rgba(19, 13, 13, 0.736);
+      padding: 30px;
+      border-radius: 15px;
+      width: 350px;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    input[type="text"], input[type="email"] {
+      width: 90%;
+      padding: 10px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 8px;
+      outline: none;
+    }
+    button {
+      width: 95%;
+      padding: 12px;
+      /* background: #00c9ff; */
+      background: crimson;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      /* background: crimson; */
+      background: green;
+      color: white;
+    }
+    .profile-pic {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 15px;
+      border: 2px solid #fff;
+    }
+    #uploadPhoto {
+      /* background-color: #00c9ff; */
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #uploadPhoto:hover {
+      /* background: crimson; */
+      background: green;
+    }
+    #fileInput {
+      display: none;
+    }
+    #msg {
+      margin-top: 10px;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+    .fade-out {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-container" data-aos="zoom-in" data-aos-duration="1000">
+    <h2 data-aos="fade-down">My Profile</h2>
+    <img id="avatarPreview" class="profile-pic" src="https://via.placeholder.com/100" alt="Profile Photo" data-aos="flip-up">
+    
+    <!-- Upload Photo Button -->
+    <button id="uploadPhoto" data-aos="fade-up">Upload Photo</button>
+    <input type="file" id="fileInput" accept="image/*">
+    
+    <input type="text" id="name" placeholder="Full Name" required data-aos="fade-right">
+    <input type="email" id="email" placeholder="Email" required data-aos="fade-left">
+    <input type="text" id="course" placeholder="Course" required data-aos="fade-right">
+    <input type="text" id="sgpa" placeholder="SGPA" required data-aos="fade-left">
+
+    <button id="saveBtn" data-aos="zoom-in-up">Save Profile</button>
+    <p id="msg" data-aos="fade-up"></p>
+  </div>
+
+  <!-- Firebase + AOS Scripts -->
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>
+    AOS.init();
+  </script>
+
+  <script type="module">
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-storage.js";
+
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+      authDomain: "studmate-e1527.firebaseapp.com",
+      projectId: "studmate-e1527",
+      storageBucket: "studmate-e1527.appspot.com",
+      messagingSenderId: "156725135850",
+      appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const saveBtn = document.getElementById("saveBtn");
+    const msg = document.getElementById("msg");
+    const uploadPhotoBtn = document.getElementById("uploadPhoto");
+    const fileInput = document.getElementById("fileInput");
+
+    // Trigger file input when "Upload Photo" button is clicked
+    uploadPhotoBtn.addEventListener("click", () => {
+      fileInput.click();
+    });
+
+    // Preview the profile photo when a new photo is selected
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById("avatarPreview").src = URL.createObjectURL(file);
+      }
+    });
+
+    // Load profile when the user is logged in
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const uid = user.uid;
+        const profileRef = doc(db, "profiles", uid);
+        const snap = await getDoc(profileRef);
+
+        if (snap.exists()) {
+          const data = snap.data();
+          document.getElementById("name").value = data.name || "";
+          document.getElementById("email").value = data.email || "";
+          document.getElementById("course").value = data.course || "";
+          document.getElementById("sgpa").value = data.sgpa || "";
+          if (data.avatarURL) {
+            document.getElementById("avatarPreview").src = data.avatarURL;
+          }
+        }
+      } else {
+        msg.innerText = "⚠️ Please login first.";
+      }
+    });
+
+    // Save the profile
+    saveBtn.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        msg.innerText = "⚠️ You must be logged in.";
+        return;
+      }
+
+      const uid = user.uid;
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const course = document.getElementById("course").value;
+      const sgpa = document.getElementById("sgpa").value;
+
+      let avatarURL = document.getElementById("avatarPreview").src;
+
+      // Save user info immediately (without waiting for upload)
+      await setDoc(doc(db, "profiles", uid), {
+        name,
+        email,
+        course,
+        sgpa,
+        avatarURL
+      });
+
+      // Start photo upload in background if file selected
+      const file = fileInput.files[0];
+      if (file) {
+        const storageRef = ref(storage, "avatars/" + uid + ".jpg");
+        uploadBytes(storageRef, file).then(async () => {
+          const url = await getDownloadURL(storageRef);
+          await setDoc(doc(db, "profiles", uid), { avatarURL: url }, { merge: true });
+        });
+      }
+
+      // Show saving feedback → success → redirect
+      msg.innerText = "✅ Profile saved successfully!";
+      msg.style.color = "lightgreen";
+
+      setTimeout(() => {
+        msg.classList.add("fade-out");
+      }, 50);
+
+      setTimeout(() => {
+        window.location.href = "planner.html";
+      }, 350);
+    });
+  </script>
+</body>
+</html>

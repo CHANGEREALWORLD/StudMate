@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Timetable Planner</title>
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: url("home(imp).jpg") no-repeat center/cover;
+    margin: 0;
+    padding: 0;
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    backdrop-filter: blur(8px);
+  }
+  .container {
+    background-color: rgba(0, 0, 0, 0.44);
+    border-radius: 15px;
+    padding: 20px;
+    width: 95%;
+    max-width: 900px;
+    box-shadow: 0 10px 32px rgba(55, 225, 196, 0.37);
+    backdrop-filter: blur(10px);
+    margin-top: 40px;
+  }
+  h2 { text-align: center; margin-bottom: 15px; }
+  input, select {
+    padding: 8px; border: none; border-radius: 5px; margin: 5px; outline: none;
+  }
+  button {
+    padding: 8px 15px; border: none; border-radius: 8px; cursor: pointer; margin: 5px; transition: 0.3s;
+  }
+  button:hover { transform: scale(1.05); }
+  .add-btn { background-color: blue; color: white; }
+  .add-btn:hover{ background-color:rgba(6, 163, 6, 0.823);}
+  .clear-btn { background-color: rgba(6, 163, 6, 0.823); color: white; }
+  .clear-btn:hover{ background-color: red; }
+  .delete-btn { background: #f44336; color: white; }
+  .search-bar { background: white; color: black; }
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+  th, td { padding: 10px; border: 1px solid rgba(255,255,255,0.2); text-align: center; }
+  tbody tr { transition: background 0.3s; }
+  tbody tr:hover { background: rgba(255,255,255,0.15); }
+  .category-Study { background: rgba(33, 149, 243, 0.586); }
+  .category-Work { background: rgba(57, 255, 7, 0.562); }
+  .category-Exercise { background: rgba(76, 175, 80, 0.2); }
+  .category-Meal { background: rgba(255, 87, 34, 0.2); }
+  .category-Other { background: rgba(156, 39, 176, 0.2); }
+</style>
+</head>
+<body>
+
+<div class="container" data-aos="fade-up">
+  <h2>📝 Advanced Timetable Planner</h2>
+  
+  <div>
+    <input type="time" id="taskTime">
+    <input type="text" id="taskName" placeholder="Enter Task">
+    <select id="taskCategory">
+      <option value="Study">📚 Study</option>
+      <option value="Work">💼 Work</option>
+      <option value="Exercise">🏋️ Exercise</option>
+      <option value="Meal">🍽 Meal</option>
+      <option value="Other">✨ Other</option>
+    </select>
+    <button class="add-btn" id="addTaskBtn">➕ Add Task</button>
+    <button class="clear-btn" id="clearTasksBtn">🗑 Clear All</button>
+    <input type="text" id="searchBar" class="search-bar" placeholder="🔍 Search task..." onkeyup="searchTasks()">
+  </div>
+
+  <table id="taskTable">
+    <thead>
+      <tr>
+        <th>⏰ Time</th>
+        <th>Task</th>
+        <th>📂 Category</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script type="module">
+AOS.init();
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+// ✅ Your Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+  authDomain: "studmate-e1527.firebaseapp.com",
+  projectId: "studmate-e1527",
+  storageBucket: "studmate-e1527.appspot.com",
+  messagingSenderId: "156725135850",
+  appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUid = null;
+const tbody = document.querySelector("#taskTable tbody");
+const addTaskBtn = document.getElementById("addTaskBtn");
+const clearTasksBtn = document.getElementById("clearTasksBtn");
+
+// 🔹 Load tasks when user logs in
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUid = user.uid;
+    console.log("Logged in as:", currentUid);
+
+    const q = query(collection(db, "profiles", currentUid, "Own"), orderBy("time"));
+    onSnapshot(q, (snapshot) => {
+      tbody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const task = docSnap.data();
+        const id = docSnap.id;
+        renderTaskRow(id, task.time, task.name, task.category);
+      });
+    });
+  } else {
+    tbody.innerHTML = "<tr><td colspan='4'>⚠ Please log in</td></tr>";
+  }
+});
+
+// 🔹 Render row in table
+function renderTaskRow(id, time, name, category) {
+  const row = document.createElement("tr");
+  row.classList.add(`category-${category}`);
+  row.innerHTML = `
+    <td ondblclick="editCell('${id}','time','${time}')">${time}</td>
+    <td ondblclick="editCell('${id}','name','${name}')">${name}</td>
+    <td ondblclick="editCell('${id}','category','${category}')">${category}</td>
+    <td><button class="delete-btn" onclick="deleteTask('${id}')">🗑</button></td>
+  `;
+  tbody.appendChild(row);
+}
+
+// 🔹 Add task
+addTaskBtn.addEventListener("click", async () => {
+  const time = document.getElementById("taskTime").value;
+  const name = document.getElementById("taskName").value;
+  const category = document.getElementById("taskCategory").value;
+
+  if (!time || !name) {
+    alert("Please fill in time and task name.");
+    return;
+  }
+  if (!currentUid) {
+    alert("You must be logged in!");
+    return;
+  }
+
+  await addDoc(collection(db, "profiles", currentUid, "Own"), { time, name, category });
+  document.getElementById("taskTime").value = "";
+  document.getElementById("taskName").value = "";
+});
+
+// 🔹 Delete task
+window.deleteTask = async (id) => {
+  if (!currentUid) return;
+  await deleteDoc(doc(db, "profiles", currentUid, "Own", id));
+};
+
+// 🔹 Edit cell (inline update)
+window.editCell = (id, field, oldValue) => {
+  const newValue = prompt("Edit value:", oldValue);
+  if (newValue === null) return;
+  updateDoc(doc(db, "profiles", currentUid, "Own", id), { [field]: newValue });
+};
+
+// 🔹 Clear all tasks
+clearTasksBtn.addEventListener("click", async () => {
+  if (!currentUid) return;
+  if (confirm("Delete ALL tasks?")) {
+    const q = collection(db, "profiles", currentUid, "Own");
+    const snapshot = await onSnapshot(q, ()=>{});
+    snapshot.forEach(docSnap => deleteDoc(doc(db, "profiles", currentUid, "Own", docSnap.id)));
+  }
+});
+
+// 🔹 Search tasks
+window.searchTasks = () => {
+  let filter = document.getElementById("searchBar").value.toLowerCase();
+  let rows = document.querySelectorAll("#taskTable tbody tr");
+  rows.forEach(row => {
+    let text = row.textContent.toLowerCase();
+    row.style.display = text.includes(filter) ? "" : "none";
+  });
+};
+</script>
+</body>
+</html>

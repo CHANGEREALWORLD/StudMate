@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StudMate - Planner Hub</title>
+  <link rel="stylesheet" href="planner.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet"/>
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+    }
+    /* Profile card styling */
+    .profile-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px auto;
+      padding: 20px;
+      width: 90%;
+      max-width: 500px;
+      /* background: white; */
+      background:rgba(0, 0, 0, 0.389);
+      /* color: black; */
+      color:whitesmoke;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+      flex-direction: column;
+    }
+    .profile-section img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+      object-fit: cover;
+      border: 2px solid #2b5876;
+    }
+    .profile-section h3 {
+      margin: 5px 0;
+    }
+    .profile-section p {
+      margin: 2px 0;
+      /* color: #444; */
+    }
+    .profile-section button {
+      margin-top: 10px;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .edit-btn {
+      background: #00c9ff;
+      color: white;
+      margin-right: 8px;
+    }
+    .edit-btn:hover {
+      background: green;
+    }
+    .logout-btn {
+      background: crimson;
+      color: white;
+    }
+    .logout-btn:hover {
+      background: darkred;
+    }
+    .sgpa-btn{
+      color:white;
+      background-color: rgb(0, 139, 39);
+    }
+    .sgpa-btn:hover{
+      background-color: darkred ;
+    
+  }
+  .career-btn:hover{
+    background-color: yellow;
+}
+
+  </style>
+</head>
+<body>
+  <!-- if you donot fix background issue -->
+  <div class="blur-bg-overlay">
+    <!--  -->
+    <!-- 🔹 User Profile Section -->
+    <div class="profile-section" data-aos="fade-down" data-aos-delay="100">
+      <img id="cardPhoto" src="https://via.placeholder.com/100" alt="Profile Photo">
+      <h3 id="cardName">Full Name</h3>
+      <p id="cardEmail">Email</p>
+      <p id="cardCourse">Course</p>
+      <p id="cardSGPA">SGPA</p>
+      <div>
+        <button class="edit-btn" onclick="window.location.href='Task.html'">See All Plan</button>
+        <!-- ADD today -->
+        <button class="sgpa-btn" onclick="window.location.href='sgpa.html'">SGPA</button>
+        <button class="career-btn" onclick="window.location.href='career.html'">career</button>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+    <div class="container">
+      <!-- Your existing flip-cards stay the same -->
+      <!-- CARD 1 -->
+      <div class="flip-card" data-aos="fade-up" data-aos-delay="30">
+        <div class="flip-card-inner">
+          <div class="flip-card-front card">
+            <h2>1. Daily Task Planner</h2>
+            <p>To-do list with tasks, deadlines and completion tracking.</p>
+          </div>
+          <div class="flip-card-back card">
+            <h2>Start Planning</h2>
+            <a href="daily.html">Open Daily Planner →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2 -->
+      <div class="flip-card" data-aos="fade-up" data-aos-delay="50">
+        <div class="flip-card-inner">
+          <div class="flip-card-front card">
+            <h2>2. Subject-wise Task Manager</h2>
+            <p>Filter your tasks by subjects like DSA, OS, Web Dev.</p>
+          </div>
+          <div class="flip-card-back card">
+            <h2>Filter by Subject</h2>
+            <a href="subject.html">Open Subject Planner →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3 -->
+      <div class="flip-card" data-aos="fade-up" data-aos-delay="70">
+        <div class="flip-card-inner">
+          <div class="flip-card-front card">
+            <h2>3. Weekly Goals Planner</h2>
+            <p>Break down your weekly study plans and track progress.</p>
+          </div>
+          <div class="flip-card-back card">
+            <h2>Track Weekly Goals</h2>
+            <a href="weekly.html">Open Weekly Planner →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4 -->
+      <div class="flip-card" data-aos="fade-up" data-aos-delay="90">
+        <div class="flip-card-inner">
+          <div class="flip-card-front card">
+            <h2>4. Time-Block Study Planner</h2>
+            <p>Divide your day into time slots and assign tasks per slot.</p>
+          </div>
+          <div class="flip-card-back card">
+            <h2>Time Blocking</h2>
+            <a href="time.html">Open Time Planner →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 5 -->
+      <div class="flip-card" data-aos="fade-up" data-aos-delay="100">
+        <div class="flip-card-inner">
+          <div class="flip-card-front card">
+            <h2>5. Monthly Calendar Planner</h2>
+            <p>Visualize tasks on a calendar and manage your month.</p>
+          </div>
+          <div class="flip-card-back card">
+            <h2>Plan Your Month</h2>
+            <a href="month.html">Open Calendar Planner →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 6 -->
+      <div class="flip-card" data-aos="fade-up" data-aos-delay="105">
+        <div class="flip-card-inner">
+          <div class="flip-card-front card">
+            <h2>📌 Pinned Task</h2>
+            <p>Mark important tasks to always keep them on top.</p>
+          </div>
+          <div class="flip-card-back card">
+            <h2>Stay Focused</h2>
+            <a href="pinn.html">View Pinned Tasks →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 7 -->
+      <div class="flip-card" data-aos="fade-up" data-aos-delay="110">
+        <div class="flip-card-inner">
+          <div class="flip-card-front card">
+            <h2>Own Time Table planner</h2>
+            <p>Plan your day as per your preference</p>
+          </div>
+          <div class="flip-card-back card">
+            <h2>Plan Your Day</h2>
+            <a href="own.html">Open Time Table</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase & Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+      authDomain: "studmate-e1527.firebaseapp.com",
+      projectId: "studmate-e1527",
+      storageBucket: "studmate-e1527.appspot.com",
+      messagingSenderId: "156725135850",
+      appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Load profile in real-time
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const uid = user.uid;
+        const profileRef = doc(db, "profiles", uid);
+
+        onSnapshot(profileRef, (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            document.getElementById("cardName").innerText = data.name || "No Name";
+            document.getElementById("cardEmail").innerText = data.email || "No Email";
+            document.getElementById("cardCourse").innerText = data.course || "No Course";
+            document.getElementById("cardSGPA").innerText = data.sgpa || "N/A";
+            document.getElementById("cardPhoto").src = data.avatarURL || "https://via.placeholder.com/100";
+          }
+        });
+      } else {
+        alert("⚠️ Please login first.");
+        window.location.href = "login.html"; // redirect if not logged in
+      }
+    });
+
+    // Logout button
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "login.html";
+    });
+  </script>
+
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init({ duration: 800, once: true });
+  </script>
+</body>
+</html>
+ 

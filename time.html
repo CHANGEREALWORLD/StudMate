@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🕒 Time Block Planner - StudMate</title>
+
+  <!-- AOS CSS -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: url("home(imp).jpg") no-repeat center center fixed;
+      background-size: cover;
+    }
+    body::before{
+      content: ' ';
+      position:absolute;top:0;left:0;width:100%;height:100%;
+      backdrop-filter: blur(8px);
+      background-color: rgba(0,0,0,0.5);
+      z-index:0;
+    }
+    h1 {
+      text-align:center;color:#ef4444;font-size:28px;
+      margin-top:40px;margin-bottom:20px;position:relative;z-index:1;
+    }
+    .container {
+      max-width:650px;margin:40px auto;padding:30px 25px;
+      border-radius:17px;box-shadow:0 10px 32px rgba(5,143,170,0.559);
+      backdrop-filter: blur(12px);position:relative;z-index:1;color:white;
+    }
+    .clock{text-align:center;font-size:1.2rem;margin-bottom:1.5rem;color:#ddd}
+    .time-block{display:flex;flex-wrap:wrap;margin-bottom:1rem}
+    .time-block input[type="time"],.time-block input[type="text"]{
+      font-size:16px;padding:10px;margin:8px 5px;border-radius:6px;border:1px solid #ccc;background:white;color:black;
+    }
+    .time-block input[type="text"]{flex:1;min-width:140px}
+    .time-block input[type="time"]{flex:0 0 110px}
+    button{font-size:16px;padding:10px 16px;margin:8px 5px;border-radius:6px;
+      border:2px solid black;background:white;color:black;cursor:pointer;transition:.2s}
+    button:hover{background:red;color:white}
+    ul{list-style:none;padding:0;margin-top:20px}
+    li{background:#e8f0fe;margin:10px 0;padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;color:black}
+    .actions button{font-size:14px;padding:6px 10px;border-radius:4px;border:none;margin-left:6px;cursor:pointer}
+    .edit-btn{background:white;color:black}
+    .remove-btn{background:#ef4444;color:white}
+    @media(max-width:600px){.time-block{flex-direction:column}.time-block input{width:100%;margin-right:0}}
+  </style>
+</head>
+<body>
+  <div class="container" data-aos="zoom-in" data-aos-delay="100">
+    <h1 data-aos="fade-down">🕒 Time Block Planner</h1>
+    <div class="clock" id="clock" data-aos="fade-up"></div>
+
+    <div class="time-block">
+      <input type="time" id="startTime" />
+      <input type="time" id="endTime" />
+      <input type="text" id="activity" placeholder="Enter your activity" />
+    </div>
+    <button onclick="addBlock()">Add Time Block</button>
+    <button onclick="clearAllBlocks()">Clear All</button>
+    <ul id="blockList"></ul>
+  </div>
+
+  <!-- AOS JS -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>AOS.init({ duration:800, once:true });</script>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+      authDomain: "studmate-e1527.firebaseapp.com",
+      projectId: "studmate-e1527",
+      storageBucket: "studmate-e1527.appspot.com",
+      messagingSenderId: "156725135850",
+      appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+    };
+
+    // Init Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const blockList = document.getElementById("blockList");
+
+    let userBlocksRef = null; // will point to the logged-in user’s collection
+
+    // Handle login/logout
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        userBlocksRef = collection(db, "profiles", user.uid, "timeBlocks");
+        renderBlocks();
+      } else {
+        // Auto login with Google for demo
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      }
+    });
+
+    async function renderBlocks() {
+      if (!userBlocksRef) return;
+      blockList.innerHTML = "";
+      const querySnapshot = await getDocs(userBlocksRef);
+      querySnapshot.forEach((docSnap) => {
+        const block = docSnap.data();
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span><strong>${block.start}–${block.end}</strong>: ${block.task}</span>
+          <div class="actions">
+            <button class="edit-btn" onclick="editBlock('${docSnap.id}','${block.start}','${block.end}','${block.task}')">Edit</button>
+            <button class="remove-btn" onclick="removeBlock('${docSnap.id}')">X</button>
+          </div>
+        `;
+        blockList.appendChild(li);
+      });
+    }
+
+    // Add Block
+    window.addBlock = async function() {
+      if (!userBlocksRef) return;
+      const start = document.getElementById("startTime").value;
+      const end = document.getElementById("endTime").value;
+      const task = document.getElementById("activity").value.trim();
+      if (!start || !end || task === "") return;
+      await addDoc(userBlocksRef, { start, end, task });
+      document.getElementById("startTime").value="";
+      document.getElementById("endTime").value="";
+      document.getElementById("activity").value="";
+      renderBlocks();
+    };
+
+    // Remove Block
+    window.removeBlock = async function(id) {
+      if (!userBlocksRef) return;
+      if(confirm("Delete this block?")) {
+        await deleteDoc(doc(userBlocksRef, id));
+        renderBlocks();
+      }
+    };
+
+    // Edit Block (remove old, refill form)
+    window.editBlock = async function(id, start, end, task) {
+      if (!userBlocksRef) return;
+      document.getElementById("startTime").value = start;
+      document.getElementById("endTime").value = end;
+      document.getElementById("activity").value = task;
+      await deleteDoc(doc(userBlocksRef, id));
+      renderBlocks();
+    };
+
+    // Clear All
+    window.clearAllBlocks = async function() {
+      if (!userBlocksRef) return;
+      if(confirm("Clear all blocks?")) {
+        const querySnapshot = await getDocs(userBlocksRef);
+        querySnapshot.forEach(async (docSnap) => {
+          await deleteDoc(doc(userBlocksRef, docSnap.id));
+        });
+        renderBlocks();
+      }
+    };
+
+    // Clock
+    function updateClock() {
+      document.getElementById("clock").textContent = "Current Time: " + new Date().toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+</body>
+</html>

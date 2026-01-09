@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>💼 Career Planner - StudMate</title>
+
+  <!-- Google Fonts + AOS -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+  
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; margin: 0; padding: 20px; overflow-x: hidden; }
+    body::before{ content: ' '; position:absolute; top:0; left:0; width:100%; height:100%; backdrop-filter: blur(8px); background:rgba(0,0,0,0.5); z-index:0; }
+    .blurred-background { position:fixed; top:0; left:0; height:100vh; width:100vw; background:url('home(imp).jpg') no-repeat center center / cover; filter:blur(10px); z-index:-1; }
+    .container { max-width:1000px; margin:auto; background:rgba(255,255,255,0.06); backdrop-filter:blur(15px); border-radius:20px; padding:40px; box-shadow:0 10px 32px rgba(55,225,196,0.37); color:#fff; position:relative; z-index:1; }
+    h1,h2 { 
+      color:crimson
+     }
+    textarea,input[type="text"],select { width:90%; padding:10px; margin:10px 0; border-radius:10px; border:1px solid #666;
+        background:rgba(255,255,255,0.05); }
+    table { width:100%; border-collapse:collapse; margin-top:10px;
+   color:#fff;
+   }
+    th,td { padding:10px; border:1px solid rgba(255,255,255,0.1); text-align:left; }
+    th { background:rgba(255,255,255,0.1); }
+    button { padding:8px 16px; 
+      background-color: #ff4d4d;
+      /* background:#00c3ff; */
+       color:white; 
+       border:none; border-radius:10px; cursor:pointer; margin:10px 5px 10px 0; transition:background 0.3s; }
+    button:hover {
+      background: #4caf50;
+    }
+    .delete-btn { background:#ff4d4d; } .delete-btn:hover{ background:#cc0000; }
+    #quote { margin-top:40px; font-style:italic; text-align:center; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:20px; font-size:18px; min-height:60px;
+    color:#fff;
+     }
+    .progress-container { background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; height:15px; width:90%; }
+    .progress-bar { height:100%; background:#4caf50; text-align:right; padding-right:5px; font-size:12px;
+       color:white; line-height:15px; }
+  </style>
+</head>
+<body>
+
+  <div class="blurred-background"></div>
+
+  <div class="container" data-aos="fade-up">
+    <h1>💼 Career Planner</h1>
+
+    <h2>🎯 My Career Goal</h2>
+    <textarea id="careerGoal" rows="3" placeholder="I want to become a Full Stack Developer..."></textarea>
+
+    <h2>🛠️ Skill Development</h2>
+    <table id="skillTable">
+      <tr><th>Skill</th><th>Level</th><th>Progress</th><th>Action</th></tr>
+    </table>
+    <button onclick="addSkill()">➕ Add Skill</button>
+
+    <h2>📜 Certifications</h2>
+    <table id="certTable">
+      <tr><th>Course Name</th><th>Platform</th><th>Status</th><th>Action</th></tr>
+    </table>
+    <button onclick="addCert()">➕ Add Certification</button>
+
+    <h2>💼 Internships / Projects</h2>
+    <table id="projectTable">
+      <tr><th>Title</th><th>Where</th><th>Status</th><th>Action</th></tr>
+    </table>
+    <button onclick="addProject()">➕ Add Project</button>
+
+    <h2>📄 Resume</h2>
+    <input type="file">
+
+    <div id="quote"><span id="typewriter"></span></div>
+
+    <button onclick="saveData()" style="float:right;">💾 Save All</button>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    // 🔥 Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+      authDomain: "studmate-e1527.firebaseapp.com",
+      projectId: "studmate-e1527",
+      storageBucket: "studmate-e1527.appspot.com",
+      messagingSenderId: "156725135850",
+      appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const provider = new GoogleAuthProvider();
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        await signInWithPopup(auth, provider);
+      }
+      console.log("✅ Logged in as:", auth.currentUser.email);
+      loadData();
+    });
+
+    // ===== UI Helpers =====
+    window.updateProgress = function(select) {
+      const val = select.value;
+      const bar = select.parentElement.nextElementSibling.querySelector('.progress-bar');
+      bar.style.width = val + '%';
+      bar.textContent = val + '%';
+    }
+
+    window.addSkill = function(skill="", level=25) {
+      const table = document.getElementById('skillTable');
+      const row = table.insertRow();
+      row.innerHTML = `
+        <td><input type="text" value="${skill}" placeholder="e.g. ReactJS"></td>
+        <td>
+          <select onchange="updateProgress(this)">
+            <option value="25" ${level==25?"selected":""}>Beginner</option>
+            <option value="50" ${level==50?"selected":""}>Intermediate</option>
+            <option value="75" ${level==75?"selected":""}>Advanced</option>
+            <option value="100" ${level==100?"selected":""}>Expert</option>
+          </select>
+        </td>
+        <td><div class="progress-container"><div class="progress-bar" style="width:${level}%;">${level}%</div></div></td>
+        <td><button class="delete-btn" onclick="this.closest('tr').remove()">Delete</button></td>`;
+    }
+
+    window.addCert = function(course="", platform="", status="Not Started") {
+      const table = document.getElementById('certTable');
+      const row = table.insertRow();
+      row.innerHTML = `
+        <td><input type="text" value="${course}" placeholder="e.g. JavaScript Essentials"></td>
+        <td><input type="text" value="${platform}" placeholder="e.g. Udemy"></td>
+        <td>
+          <select>
+            <option ${status=="Not Started"?"selected":""}>Not Started</option>
+            <option ${status=="In Progress"?"selected":""}>In Progress</option>
+            <option ${status=="Completed"?"selected":""}>Completed</option>
+          </select>
+        </td>
+        <td><button class="delete-btn" onclick="this.closest('tr').remove()">Delete</button></td>`;
+    }
+
+    window.addProject = function(title="", where="", status="Not Started") {
+      const table = document.getElementById('projectTable');
+      const row = table.insertRow();
+      row.innerHTML = `
+        <td><input type="text" value="${title}" placeholder="e.g. StudMate Web App"></td>
+        <td><input type="text" value="${where}" placeholder="e.g. College"></td>
+        <td>
+          <select>
+            <option ${status=="Not Started"?"selected":""}>Not Started</option>
+            <option ${status=="Ongoing"?"selected":""}>Ongoing</option>
+            <option ${status=="Completed"?"selected":""}>Completed</option>
+          </select>
+        </td>
+        <td><button class="delete-btn" onclick="this.closest('tr').remove()">Delete</button></td>`;
+    }
+
+    // ===== SAVE =====
+    window.saveData = async function() {
+      const user = auth.currentUser;
+      if (!user) { alert("⚠️ Please log in first!"); return; }
+
+      const goal = document.getElementById("careerGoal").value;
+
+      // Skills
+      const skills = [];
+      document.querySelectorAll("#skillTable tr").forEach((row, idx) => {
+        if (idx===0) return;
+        skills.push({
+          skill: row.cells[0].querySelector("input").value,
+          level: parseInt(row.cells[1].querySelector("select").value)
+        });
+      });
+
+      // Certifications
+      const certs = [];
+      document.querySelectorAll("#certTable tr").forEach((row, idx) => {
+        if (idx===0) return;
+        certs.push({
+          course: row.cells[0].querySelector("input").value,
+          platform: row.cells[1].querySelector("input").value,
+          status: row.cells[2].querySelector("select").value
+        });
+      });
+
+      // Projects
+      const projects = [];
+      document.querySelectorAll("#projectTable tr").forEach((row, idx) => {
+        if (idx===0) return;
+        projects.push({
+          title: row.cells[0].querySelector("input").value,
+          where: row.cells[1].querySelector("input").value,
+          status: row.cells[2].querySelector("select").value
+        });
+      });
+
+      await addDoc(collection(db, "profiles", user.uid, "careerPlanner"), {
+        goal, skills, certs, projects, createdAt: new Date()
+      });
+
+      alert("✅ Career plan saved!");
+    }
+
+    // ===== LOAD =====
+    async function loadData() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const q = query(
+        collection(db, "profiles", user.uid, "careerPlanner"),
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) return;
+
+      const data = snap.docs[0].data();
+
+      document.getElementById("careerGoal").value = data.goal || "";
+
+      // Fill skills
+      data.skills?.forEach(s => addSkill(s.skill, s.level));
+      // Fill certs
+      data.certs?.forEach(c => addCert(c.course, c.platform, c.status));
+      // Fill projects
+      data.projects?.forEach(p => addProject(p.title, p.where, p.status));
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init();
+    // Typewriter
+    const quote = `🌟 “The future belongs to those who believe in the beauty of their dreams.” — Eleanor Roosevelt`;
+    let i=0; function typeWriter(){ if(i<quote.length){document.getElementById("typewriter").innerHTML += quote.charAt(i); i++; setTimeout(typeWriter,40);} }
+    window.onload = typeWriter;
+  </script>
+</body>
+</html>

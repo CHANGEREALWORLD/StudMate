@@ -1,0 +1,152 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+ }
+ body{
+    background:url('home\(imp).jpg')no-repeat center center fixed;
+margin: 0;
+padding: 0;
+
+    background-size: cover; 
+/* line 26 cover entire image*/
+font-family: 'poppins',sans-serif;
+color: whitesmoke;
+/* think about color again */
+position: relative;
+overflow-x: hidden;
+/* flow show karta hai */
+ }
+ .overlay{
+    position:fixed;
+    top: 0;
+    left: 0;
+    height:100vh;
+    width:100vw;
+    background:rgba(0,0,0,0.6);
+    z-index:-1;
+
+}
+
+nav{
+    /* use of nav bar */
+    top: 0;
+    height: 120px;
+    /* position: sticky; */
+    background: transparent;
+    box-shadow: 0 10px 20px rgba(0,0 0,0.5);
+    backdrop-filter: blur(3px);
+    width: 100%;
+    padding:20px 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top:0;
+    background-color: rgba(0,0,0,0.7 );
+    z-index: 1000;
+    /* z-index use ? */
+}
+.logo{
+    font-size: 1.8rem;
+    /* font-size: 38px; */
+    font-weight:600;
+}
+.nav-links{
+    padding: 12px 15px;
+    font-size: 1.2rem;
+    /* background-color: white; */
+    border: none;
+    
+    display: flex;
+    gap:30px;
+    /* focus on gap between in nav */
+    text-align:center
+    /* think again you want to use or not */
+}
+.nav-links a{
+    border:  3px solid transparent;
+    border-radius: 12px;
+    transition: all 0.7s ease;
+    white-space: nowrap;
+    color: whitesmoke;
+    text-decoration: none;
+    font-size: 1rem;
+    /* font-size: 1.3rem; */
+    font-weight: 500;
+    transition: color 0.3s;
+
+}
+.nav-links a:hover{
+    background: red;
+    /* color: rgba(255, 0, 0, 0.882); */
+    /* color pahale rgba ka maine 77 line set kiya */
+    border: 2px solid #fff;
+    /* make diffrent color here ,oyu can */
+}
+.welcome-text{
+    margin-top: 150px;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 500;
+    padding: 0 20px;
+}
+.hero{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content:space-between ;
+    padding: 60px ;
+    margin-top: 50px;
+}
+.hero-text{
+    flex:1;
+    min-width: 300px
+}
+.hero-text h1{
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+}
+.hero-text p{
+    font-size: 1rem;
+margin-bottom: 30px;
+color: #ccc;
+}
+
+.hero-text button{
+    padding: 12px 25px;
+    font-size:1.2rem;
+    /*  font dark get start ka button */
+    background-color: white; 
+    /* backgroubnd ka color whilre hai button me */
+    border: none;
+    border-radius: 10px; 
+    /* ya 8 px */
+    color: black; 
+    /* nahi samjh */
+    font-weight: bold;
+    /*  */
+    cursor: pointer;
+    transition:background-color 0.3s;
+}
+.hero-text button:hover{
+    background-color: red;
+    /* change this if you want */
+}
+/* hero img ka concept nahi hua kiya abhi tak  aaga ruse karn ahai tih see h6 index concept */
+
+
+@media (max-width:768px) {
+.hero{
+    flex-direction: column;
+    text-align: center;
+}
+.hero-text h1{
+    font-size: 2rem;
+    /* why i werite this line */
+}
+.hero-text p{
+    font-size: 0.95rem;
+    /*why i werite this line   */
+} 
+}

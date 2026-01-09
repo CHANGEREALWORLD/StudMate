@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weekly Subject Planner – StudMate</title>
+
+  <!-- AOS -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* keep your CSS as before */
+    .reminder-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 0.85em;
+    }
+    .reminder-row input {
+      accent-color: #6c63ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" data-aos="fade-up">
+    <header data-aos="fade-down">
+      <h1>Weekly Subject Planner</h1>
+      <div class="weekly-progress" aria-label="Weekly progress">
+        <div class="bar"><div id="weeklyFill" class="fill"></div></div>
+        <div id="weeklyLabel" class="bar-label">0%</div>
+      </div>
+    </header>
+
+    <!-- Add Task -->
+    <section class="form" data-aos="fade-up">
+      <div class="field">
+        <label for="daySelect">Day</label>
+        <select id="daySelect" class="select">
+          <option value="Mon">Monday</option>
+          <option value="Tue">Tuesday</option>
+          <option value="Wed">Wednesday</option>
+          <option value="Thu">Thursday</option>
+          <option value="Fri">Friday</option>
+          <option value="Sat">Saturday</option>
+          <option value="Sun">Sunday</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="title">Subject</label>
+        <input id="title" class="input" type="text" placeholder="e.g. DSA Practice" />
+      </div>
+
+      <div class="field">
+        <label for="date">Date</label>
+        <input id="date" class="input" type="date" />
+      </div>
+
+      <div class="field">
+        <label for="time">Time</label>
+        <input id="time" class="input" type="time" />
+      </div>
+
+      <div class="field">
+        <label for="progress">Progress (%)</label>
+        <input id="progress" class="input" type="number" min="0" max="100" placeholder="0–100" />
+      </div>
+
+      <button id="addBtn" class="btn">➕ Add Task</button>
+    </section>
+
+    <!-- Days -->
+    <section id="daysGrid" class="grid"></section>
+  </div>
+
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script type="module">
+    AOS.init();
+
+    // ===== Firebase =====
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+    import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+      authDomain: "studmate-e1527.firebaseapp.com",
+      projectId: "studmate-e1527",
+      storageBucket: "studmate-e1527.appspot.com",
+      messagingSenderId: "156725135850",
+      appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ====== Elements ======
+    const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const grid = document.getElementById("daysGrid");
+    const weeklyFill = document.getElementById("weeklyFill");
+    const weeklyLabel = document.getElementById("weeklyLabel");
+
+    const daySelect = document.getElementById("daySelect");
+    const titleInput = document.getElementById("title");
+    const dateInput = document.getElementById("date");
+    const timeInput = document.getElementById("time");
+    const progInput = document.getElementById("progress");
+    const addBtn = document.getElementById("addBtn");
+
+    let currentUid = null;
+    let weekly = {Mon:[], Tue:[], Wed:[], Thu:[], Fri:[], Sat:[], Sun:[]};
+
+    // ====== Helpers ======
+    const avg = (arr) => arr.length ? Math.round(arr.reduce((a,t)=>a+(parseInt(t.progress)||0),0)/arr.length) : 0;
+    const overall = () => {
+      const all = days.flatMap(d=>weekly[d]);
+      return all.length ? Math.round(all.reduce((a,t)=>a+(parseInt(t.progress)||0),0)/all.length) : 0;
+    };
+
+    // ===== Notifications =====
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+
+    function scheduleReminder(task){
+      if(!task.reminder) return; // only if enabled
+      try{
+        const dt = new Date(`${task.date}T${task.time}`);
+        const remindAt = new Date(dt.getTime() - 10*60*1000);
+        const delay = remindAt - new Date();
+        if(delay > 0){
+          setTimeout(()=>{
+            if(Notification.permission==="granted"){
+              new Notification("🔔 Task Reminder", {
+                body: `${task.title} at ${task.time} (in 10 mins)`
+              });
+            }
+          }, delay);
+        }
+      }catch(e){}
+    }
+
+    function render(){
+      grid.innerHTML = "";
+      days.forEach((d, idx)=>{
+        const list = weekly[d];
+        const card = document.createElement("div");
+        card.className = "day";
+        card.setAttribute("data-aos","fade-up");
+        card.setAttribute("data-aos-delay", String(idx*60));
+
+        const dayProg = avg(list);
+        card.innerHTML = `
+          <div class="day-head">
+            <div class="day-title">${d}</div>
+            <div class="mini" style="width:48%">
+              <div class="bar"><div class="fill" style="width:${dayProg}%"></div></div>
+              <div class="bar-label">${dayProg}%</div>
+            </div>
+          </div>
+          <div class="tasks"></div>
+        `;
+
+        const wrap = card.querySelector(".tasks");
+
+        list.forEach((t)=>{
+          const row = document.createElement("div");
+          row.className = "task";
+          row.innerHTML = `
+            <div>
+              <p class="task-title">${t.title}</p>
+              <div class="task-meta">📅 ${t.date} • 🕒 ${t.time}</div>
+            </div>
+            <div class="actions">
+              <button class="icon-btn" title="Delete"><i class="ri-delete-bin-line"></i></button>
+            </div>
+            <div class="task-progress">
+              <div class="range-row">
+                <span>Progress</span>
+                <input type="range" min="0" max="100" value="${t.progress}" class="range">
+                <span class="val">${t.progress}%</span>
+              </div>
+              <div class="reminder-row">
+                <input type="checkbox" class="reminder-toggle" ${t.reminder ? "checked" : ""}/>
+                <label>Reminder (10 min before)</label>
+              </div>
+            </div>
+          `;
+
+          // Delete
+          row.querySelector(".icon-btn").addEventListener("click", async ()=>{
+            await deleteDoc(doc(db, "profiles", currentUid, "weeklyTasks", t.id));
+          });
+
+          // Progress update
+          const range = row.querySelector(".range");
+          const val = row.querySelector(".val");
+          range.addEventListener("input", ()=> val.textContent = range.value + "%");
+          range.addEventListener("change", async ()=>{
+            await updateDoc(doc(db, "profiles", currentUid, "weeklyTasks", t.id), { progress: parseInt(range.value) });
+          });
+
+          // Reminder toggle
+          const toggle = row.querySelector(".reminder-toggle");
+          toggle.addEventListener("change", async ()=>{
+            await updateDoc(doc(db, "profiles", currentUid, "weeklyTasks", t.id), { reminder: toggle.checked });
+            if(toggle.checked) scheduleReminder(t);
+          });
+
+          wrap.appendChild(row);
+        });
+
+        grid.appendChild(card);
+      });
+
+      const total = overall();
+      weeklyFill.style.width = total + "%";
+      weeklyLabel.textContent = total + "%";
+    }
+
+    // ====== Auth & Firestore Sync ======
+    onAuthStateChanged(auth, (user)=>{
+      if(user){
+        currentUid = user.uid;
+        const q = query(collection(db, "profiles", currentUid, "weeklyTasks"), orderBy("date"));
+        onSnapshot(q, (snap)=>{
+          weekly = {Mon:[], Tue:[], Wed:[], Thu:[], Fri:[], Sat:[], Sun:[]};
+          snap.forEach(docSnap=>{
+            const data = docSnap.data();
+            weekly[data.day].push({...data, id: docSnap.id});
+            scheduleReminder(data); // ⏰ only if reminder=true
+          });
+          render();
+        });
+      } else {
+        currentUid = null;
+        grid.innerHTML = "<p>⚠ Please log in first.</p>";
+      }
+    });
+
+    // ====== Add Task ======
+    addBtn.addEventListener("click", async ()=>{
+      if(!currentUid) return alert("Login first!");
+      const day = daySelect.value;
+      const title = titleInput.value.trim();
+      const date = dateInput.value;
+      const time = timeInput.value;
+      const progress = Math.min(100, Math.max(0, parseInt(progInput.value||"0")));
+
+      if(!title || !date || !time){
+        alert("Fill Subject, Date and Time");
+        return;
+      }
+
+      const task = { day, title, date, time, progress, reminder: true }; // default reminder ON
+      await addDoc(collection(db, "profiles", currentUid, "weeklyTasks"), task);
+      scheduleReminder(task);
+
+      titleInput.value = "";
+      dateInput.value = "";
+      timeInput.value = "";
+      progInput.value = "";
+    });
+  </script>
+</body>
+</html>

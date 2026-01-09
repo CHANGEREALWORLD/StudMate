@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Monthly Planner – StudMate</title>
+
+  <!-- AOS -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+  <!-- Remix icons -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
+
+  <style>
+    /* Keep your same styles */
+    :root{ --primary:#6c63ff; --glass: rgba(255,255,255,0.12); --card: rgba(255,255,255,0.08); --muted: rgba(255,255,255,0.85); --shadow: 0 18px 50px rgba(0,0,0,.45);}
+    *{ box-sizing:border-box; font-family: Poppins, system-ui, sans-serif; }
+    body{ margin:0; min-height:100vh; background: url('home(imp).jpg') center/cover fixed; display:flex; align-items:flex-start; justify-content:center; padding:28px; color:var(--muted);}
+    .overlay{ position:fixed; inset:0; z-index:0; background: rgba(0,0,0,.55); backdrop-filter: blur(10px);}
+    .container{ position:relative; z-index:1; width: min(1200px, 96vw); background:var(--glass); padding:18px; border-radius:18px; box-shadow: var(--shadow); backdrop-filter: blur(18px); background-color: rgba(0,0,0,0.5); box-shadow: 0 10px 32px rgba(55, 225, 196, 0.37);}
+    header{ text-align:center; margin-bottom:12px; }
+    header h1{ margin:0; font-size:1.5rem; color:#fff; }
+    .top-row{ display:flex; gap:12px; align-items:center; justify-content:space-between; margin:14px 0 10px; flex-wrap:wrap; }
+    .controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    select,input{ padding:8px 10px; border-radius:8px; border:none; outline:none; background:#fff; color:#111; font-weight:600;}
+    button.btn{ padding:10px 14px; border-radius:10px; border:none; cursor:pointer; background:var(--primary); color:#fff; font-weight:800; box-shadow:0 8px 20px rgba(108,99,255,.28);}
+    .month-progress{ max-width:500px; width:48%; min-width:220px; }
+    .bar{ background: rgba(255,255,255,0.28); height:12px; border-radius:999px; overflow:hidden;}
+    .bar .fill{ height:100%; width:0; background:var(--primary); transition:width .25s ease;}
+    .bar-label{ text-align:center; margin-top:6px; font-weight:700; color:#fff;}
+    .add-form{ display:grid; grid-template-columns: repeat(6,1fr); gap:8px; background: var(--card); padding:12px; border-radius:12px; margin-bottom:14px;}
+    .field{ display:flex; flex-direction:column; gap:6px;}
+    .field label{ font-size:.8rem; color:#f6f5ff;}
+    .add-form .btn{ grid-column: span 6;}
+    @media(max-width:900px){.add-form{grid-template-columns: repeat(3,1fr);} .add-form .btn{grid-column: span 3;}}
+    @media(max-width:560px){.add-form{grid-template-columns:1fr;} .add-form .btn{grid-column:1;}}
+    .calendar{ display:grid; grid-template-columns: repeat(7,1fr); gap:12px;}
+    @media(max-width:1100px){.calendar{grid-template-columns: repeat(4,1fr);} }
+    @media(max-width:740px){.calendar{grid-template-columns: repeat(2,1fr);} }
+    @media(max-width:420px){.calendar{grid-template-columns: 1fr;} }
+    .day{ background: rgba(255,255,255,0.04); border-radius:12px; padding:10px; min-height:120px; display:flex; flex-direction:column; box-shadow:0 8px 20px rgba(0,0,0,0.28);}
+    .day-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+    .day-num{ font-weight:800; color:#fff;}
+    .tasks{ display:flex; flex-direction:column; gap:8px; overflow:auto; max-height:260px; padding-right:6px;}
+    .task{ background: rgba(255,255,255,0.09); padding:8px; border-radius:10px; display:grid; grid-template-columns:1fr auto; gap:8px; align-items:start;}
+    .task-title{ font-weight:700; color:#fff; margin:0; font-size:.95rem;}
+    .task-meta{ font-size:.82rem; opacity:.95;}
+    .task-actions{ display:flex; gap:6px; align-items:center;}
+    .icon-btn{ background:transparent; border:none; color:#ff7a7a; font-size:1.1rem; cursor:pointer;}
+    .task-progress{ grid-column:1 / -1; margin-top:8px;}
+    .range-row{ display:flex; gap:8px; align-items:center;}
+    .range-row input[type="range"]{ width:100%;}
+    .range-val{ min-width:42px; text-align:right; font-weight:800; color:#fff;}
+    .empty{ opacity:.7; text-align:center; padding:12px 0; color:#f1f0ff;}
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <div class="container" data-aos="fade-up">
+    <header><h1>Monthly Planner</h1></header>
+
+    <div class="top-row">
+      <div class="controls">
+        <label style="color:#fff;font-weight:700;">Month:</label>
+        <select id="monthSelect"></select>
+        <label style="color:#fff;font-weight:700;">Year:</label>
+        <select id="yearSelect"></select>
+      </div>
+      <div class="month-progress">
+        <div class="bar"><div id="monthFill" class="fill"></div></div>
+        <div id="monthLabel" class="bar-label">0%</div>
+      </div>
+    </div>
+
+    <!-- Add Task -->
+    <section class="add-form">
+      <div class="field"><label>Subject</label><input id="taskTitle" type="text"/></div>
+      <div class="field"><label>Date</label><input id="taskDate" type="date"/></div>
+      <div class="field"><label>Time</label><input id="taskTime" type="time"/></div>
+      <div class="field"><label>Progress (%)</label><input id="taskProgress" type="number" min="0" max="100"/></div>
+      <div class="field"><label style="visibility:hidden">.</label><button id="addTaskBtn" class="btn">Add Task</button></div>
+    </section>
+
+    <section id="calendar" class="calendar"></section>
+  </div>
+
+  <script type="module">
+    AOS.init();
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+      authDomain: "studmate-e1527.firebaseapp.com",
+      projectId: "studmate-e1527",
+      storageBucket: "studmate-e1527.appspot.com",
+      messagingSenderId: "156725135850",
+      appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const monthSelect=document.getElementById("monthSelect");
+    const yearSelect=document.getElementById("yearSelect");
+    const calendar=document.getElementById("calendar");
+    const monthFill=document.getElementById("monthFill");
+    const monthLabel=document.getElementById("monthLabel");
+    const titleInput=document.getElementById("taskTitle");
+    const dateInput=document.getElementById("taskDate");
+    const timeInput=document.getElementById("taskTime");
+    const progInput=document.getElementById("taskProgress");
+    const addBtn=document.getElementById("addTaskBtn");
+
+    let currMonth, currYear, currentUid, monthTasks=[];
+
+    // fill selects
+    (()=>{
+      const now=new Date();
+      months.forEach((m,i)=>{ let o=document.createElement("option");o.value=i;o.textContent=m;monthSelect.appendChild(o);});
+      for(let y=now.getFullYear()-2;y<=now.getFullYear()+2;y++){ let o=document.createElement("option");o.value=y;o.textContent=y;yearSelect.appendChild(o);}
+      monthSelect.value=now.getMonth();yearSelect.value=now.getFullYear();
+      currMonth=now.getMonth();currYear=now.getFullYear();
+    })();
+
+    function render(){
+      calendar.innerHTML="";
+      const daysInMonth=new Date(currYear,currMonth+1,0).getDate();
+      for(let d=1;d<=daysInMonth;d++){
+        const dateStr=`${currYear}-${String(currMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        const tasks=monthTasks.filter(t=>t.date===dateStr);
+        const card=document.createElement("div");
+        card.className="day";
+        card.setAttribute("data-aos","fade-up");
+        card.innerHTML=`<div class="day-head"><div><div class="day-num">${d}</div></div><div style="font-weight:800;color:#fff">${avg(tasks)}%</div></div><div class="tasks"></div>`;
+        const wrap=card.querySelector(".tasks");
+        if(tasks.length===0){wrap.innerHTML="<div class='empty'>No tasks</div>";}
+        tasks.forEach(t=>{
+          const row=document.createElement("div");row.className="task";
+          row.innerHTML=`<div><div class="task-title">${t.title}</div><div class="task-meta">${t.time} • ${t.progress}%</div></div><div class="task-actions"><button class="icon-btn"><i class="ri-delete-bin-line"></i></button></div><div class="task-progress"><div class="range-row"><input type="range" min="0" max="100" value="${t.progress}"><div class="range-val">${t.progress}%</div></div></div>`;
+          row.querySelector(".icon-btn").addEventListener("click",async()=>{await deleteDoc(doc(db,"profiles",currentUid,"Monthly",t.id));});
+          const range=row.querySelector("input[type=range]");const val=row.querySelector(".range-val");
+          range.addEventListener("input",()=>val.textContent=range.value+"%");
+          range.addEventListener("change",async()=>{await updateDoc(doc(db,"profiles",currentUid,"Monthly",t.id),{progress:parseInt(range.value)});});
+          wrap.appendChild(row);
+        });
+        calendar.appendChild(card);
+      }
+      const total=avg(monthTasks);
+      monthFill.style.width=total+"%";monthLabel.textContent=total+"%";
+    }
+
+    const avg=(arr)=>arr.length?Math.round(arr.reduce((a,t)=>a+(parseInt(t.progress)||0),0)/arr.length):0;
+
+    monthSelect.addEventListener("change",()=>{currMonth=parseInt(monthSelect.value);render();});
+    yearSelect.addEventListener("change",()=>{currYear=parseInt(yearSelect.value);render();});
+
+    addBtn.addEventListener("click",async()=>{
+      if(!currentUid)return alert("Login first");
+      const title=titleInput.value.trim(),date=dateInput.value,time=timeInput.value,progress=parseInt(progInput.value)||0;
+      if(!title||!date){alert("Fill all fields");return;}
+      await addDoc(collection(db,"profiles",currentUid,"Monthly"),{title,date,time,progress});
+      titleInput.value="";dateInput.value="";timeInput.value="";progInput.value="";
+    });
+
+    onAuthStateChanged(auth,(user)=>{
+      if(user){
+        currentUid=user.uid;
+        const q=query(collection(db,"profiles",currentUid,"Monthly"),orderBy("date"));
+        onSnapshot(q,(snap)=>{monthTasks=snap.docs.map(d=>({...d.data(),id:d.id}));render();});
+      }else{calendar.innerHTML="<p style='color:white'>⚠ Please login</p>";}
+    });
+  </script>
+</body>
+</html>

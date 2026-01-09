@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📊 CGPA Calculator - StudMate</title>
+
+  <!-- Firebase v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <!-- AOS CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ----------------- Styles ----------------- */
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: url('home(imp).jpg') no-repeat center center/cover;
+      backdrop-filter: blur(10px);
+      margin: 0; padding: 0; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    body::before{
+      content: ' '; position:absolute; top:0; left:0; width:100%; height:100%;
+      backdrop-filter: blur(8px);
+      background-color: rgba(0,0,0,0.5);
+      z-index: 0;
+    }
+    .container {
+      border-radius: 20px;
+      box-shadow: 0 10px 32px rgba(55,225,196,0.37);
+      padding: 40px;
+      width: 90%; max-width: 800px;
+      color: #fff; backdrop-filter: blur(20px);
+      text-align: center; position: relative; z-index: 1;
+      animation: fadeIn 1s ease-in-out;
+    }
+    h2 { font-size: 2rem; margin-bottom: 20px; }
+    table { width: 100%; margin: 20px 0; border-collapse: collapse; }
+    th, td {
+      padding: 12px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff; border-radius: 10px;
+    }
+    input { width: 80px; padding: 6px; border: none; border-radius: 8px; text-align: center; }
+    button {
+      background: #ff4d4d; color: white; border: none; padding: 12px 20px; margin: 10px;
+      border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.3s ease;
+    }
+    button:hover { background: #ff1a1a; transform: scale(1.05); }
+    #result { margin-top: 20px; font-size: 1.1rem; color: #ffcccb; }
+    canvas { margin-top: 30px; background-color: rgba(0,0,0,0.5); border-radius: 12px; }
+    #verse { margin-top: 40px; color: #555; text-align: center; font-style: italic; overflow-x:auto; white-space:nowrap; padding:10px; }
+    .typewriter { display:inline-block; overflow:hidden; border-right:2px solid #fff; white-space:nowrap; animation:typing 5s steps(60,end), blink 0.75s step-end infinite; max-width:100%; }
+    @keyframes typing { from {width:0;} to {width:100%;} }
+    @keyframes blink { 0%,100% { border-color:transparent;} 50% { border-color:#fff;} }
+    @keyframes fadeIn { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
+  </style>
+</head>
+<body>
+  <div class="container" data-aos="zoom-in">
+    <h2 data-aos="fade-up">📊 CGPA Calculator</h2>
+
+    <table id="cgpaTable" data-aos="fade-up">
+      <tr><th>Semester</th><th>SGPA</th><th>Credits</th></tr>
+    </table>
+
+    <div data-aos="fade-up" data-aos-delay="100">
+      <button onclick="addRow()">➕ Add Semester</button>
+      <button onclick="calculateCGPA()">🧮 Calculate CGPA</button>
+      <button onclick="downloadPDF()">📤 Export PDF</button>
+    </div>
+
+    <h3 id="result" data-aos="fade-up" data-aos-delay="200">Your CGPA and Percentage will appear here.</h3>
+    <canvas id="sgpaChart" width="400" height="200" data-aos="fade-up" data-aos-delay="300"></canvas>
+
+    <div id="verse" data-aos="fade-up" data-aos-delay="400">
+      <span class="typewriter">“You have the right to perform your duties but not to the results.” — Bhagavad Gita 2.47</span>
+    </div>
+  </div>
+
+  <!-- AOS -->
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>AOS.init();</script>
+
+  <script>
+    // ----------------- Firebase Setup -----------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+      authDomain: "studmate-e1527.firebaseapp.com",
+      projectId: "studmate-e1527",
+      storageBucket: "studmate-e1527.appspot.com",
+      messagingSenderId: "156725135850",
+      appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let chart;
+
+    // ----------------- Add Row -----------------
+    function addRow(sgpa = "", credit = "") {
+      const table = document.getElementById("cgpaTable");
+      const rowCount = table.rows.length;
+      const row = table.insertRow(-1);
+      row.innerHTML = `
+        <td>${rowCount}</td>
+        <td><input type="number" step="0.01" class="sgpa" value="${sgpa}"/></td>
+        <td><input type="number" class="credits" value="${credit}"/></td>
+      `;
+    }
+
+    // ----------------- Calculate CGPA -----------------
+    function calculateCGPA() {
+      const sgpas = document.querySelectorAll(".sgpa");
+      const credits = document.querySelectorAll(".credits");
+      let totalWeightedSGPA = 0, totalCredits = 0;
+      const sgpaValues = [];
+
+      for (let i=0;i<sgpas.length;i++){
+        const sgpa=parseFloat(sgpas[i].value);
+        const credit=parseFloat(credits[i].value);
+        if(!isNaN(sgpa) && !isNaN(credit)){
+          totalWeightedSGPA += sgpa*credit;
+          totalCredits += credit;
+          sgpaValues.push(sgpa);
+        } else { sgpaValues.push(null); }
+      }
+
+      const cgpa = totalCredits>0 ? (totalWeightedSGPA/totalCredits).toFixed(2) : 0;
+      const percentage = (cgpa - 0.75) * 10;
+
+      document.getElementById("result").innerHTML = `
+        🎯 <strong>Your CGPA:</strong> ${cgpa}<br>
+        📈 <strong>Percentage:</strong> ${percentage.toFixed(2)}%
+      `;
+
+      drawChart(sgpaValues);
+
+      // ----------------- Save to Firestore -----------------
+      const user = auth.currentUser;
+      if(user){
+        const savedData = Array.from(sgpas).map((sgpa,i)=>({ sgpa: sgpa.value, credit: credits[i].value }));
+        db.collection("profiles").doc(user.uid).collection("cgpa").doc("report")
+          .set({ semesters: savedData, cgpa: cgpa, percentage: percentage.toFixed(2), updatedAt: new Date() })
+          .then(()=> console.log("✅ CGPA saved to Firestore"))
+          .catch(err=> console.error("❌ Firestore error:",err));
+      } else {
+        console.log("⚠️ User not logged in, cannot save to Firestore");
+      }
+    }
+
+    // ----------------- Draw Chart -----------------
+    function drawChart(data){
+      const ctx=document.getElementById("sgpaChart").getContext("2d");
+      if(chart) chart.destroy();
+      chart = new Chart(ctx,{
+        type:'line',
+        data:{ labels: data.map((_,i)=>`Sem ${i+1}`), datasets:[{ label:'SGPA', data:data, borderColor:'#fff', backgroundColor:'rgba(255,255,255,0.2)', borderWidth:2, tension:0.4 }]},
+        options:{ responsive:true, scales:{ y:{ beginAtZero:false, suggestedMin:5, suggestedMax:10, ticks:{ color:"#fff" } }, x:{ ticks:{ color:"#fff" } } }, plugins:{ legend:{ labels:{ color:"#fff" } } } }
+      });
+    }
+
+    // ----------------- Download PDF -----------------
+    function downloadPDF(){
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("CGPA Report", 20, 20);
+      const sgpas = document.querySelectorAll(".sgpa");
+      const credits = document.querySelectorAll(".credits");
+      let y = 40;
+      for(let i=0;i<sgpas.length;i++){
+        doc.text(`Sem ${i+1}: SGPA=${sgpas[i].value}, Credits=${credits[i].value}`,20,y);
+        y+=10;
+      }
+      doc.text(document.getElementById("result").innerText,20,y+10);
+      doc.save("CGPA_Report.pdf");
+    }
+
+    // ----------------- On Load -----------------
+    window.onload = () => {
+      auth.onAuthStateChanged(user=>{
+        if(user){
+          db.collection("profiles").doc(user.uid).collection("cgpa").doc("report").get()
+            .then(doc=>{
+              if(doc.exists){
+                const data = doc.data();
+                document.getElementById("cgpaTable").innerHTML = `<tr><th>Semester</th><th>SGPA</th><th>Credits</th></tr>`;
+                data.semesters.forEach(sem=>addRow(sem.sgpa, sem.credit));
+                document.getElementById("result").innerHTML = `🎯 <strong>Your CGPA:</strong> ${data.cgpa}<br>📈 <strong>Percentage:</strong> ${data.percentage}%`;
+                drawChart(data.semesters.map(s=>parseFloat(s.sgpa)));
+              } else addRow();
+            });
+        } else { console.log("⚠️ User not logged in."); addRow(); }
+      });
+    };
+  </script>
+</body>
+</html>

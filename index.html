@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudMate</title>
+    <link rel="icon" type="png" href="red.ico" sizes="32*32">
+     <link rel="icon" type="image/png" href="red.ico" sizes="32x32"/>
+    <link rel="stylesheet" href="Home.css">
+    
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- AOS Animation -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  
+  <!-- Typewriter -->
+  <!-- <script src="https://unpkg.com/typewriter-effect@2.18.1/dist/core.js"></script> -->
+
+<!-- Correct script -->
+<script src="https://unpkg.com/typewriter-effect@2.18.1/dist/typewriter.umd.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
+<script src="fcm.js" type="module"></script>
+
+
+    
+</head>
+<body>
+  
+    <div class="overlay"></div>
+
+    <nav data-aos="fade-down" data-aos-duration="1000">
+        <div class="logo"><img src="red.ico" alt="StudMate logo" width="30">StudMate</div>
+         <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="planner.html">Planner</a>
+            <a href="sgpa.html">SGPA</a>
+            <a href="career.html">Career</a>
+            <a href="about.html">About</a>
+            
+         </div>
+    </nav>
+    <div class="welcome-text" id="welcome-text" data-aos="fade-up" data-aos-duration="300"></div>
+   
+     <section class="hero" data-aos="fade-up" data-aos-delay="500">
+        <div class="hero-text">
+            <h1>Organize Your Academic Life</h1>
+            <p>StudMate helps you manage your goals, plan your study hours, track SGPA,<br>and prepare for a successful career — all in one place.</p>
+            <a href="login.html">
+                  <button>Get Started</button></a>
+         </div>
+        <div class="hero-img"> 
+        </div>
+     </section>
+     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+      <script src="https://unpkg.com/typewriter-effect@2.18.1/dist/core.js"></script>
+     <script type="module" src="firebase-config.js"></script>
+
+     
+     <script>
+        AOS.init();
+
+        const app=document.getElementById('welcome-text');
+        const typewriter=new Typewriter(app,{
+            loop:true,
+            delay:70,
+
+        });
+        typewriter
+        .typeString('Welcome to StudMate!')
+        .pauseFor(1500)
+        .deleteAll()
+        .typeString('Plan Better.Study Smarter.')
+        .pauseFor(1500)
+        .deleteAll()
+        .typeString('Your acadmic journey start here 🚀')
+        .pauseFor(2000)
+        .start();
+     </script>
+     <script>
+  // if ("serviceWorker" in navigator) {
+  //   navigator.serviceWorker.register("/firebase-messaging-sw.js")
+  //     .then((registration) => {
+  //       console.log("✅ Service Worker registered:", registration);
+  //     })
+  //     .catch((err) => {
+  //       console.error("❌ Service Worker registration failed:", err);
+  //     });
+  // }
+  if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/firebase-config.js")
+    .then((reg) => {
+      console.log("Service worker registered:", reg);
+    })
+    .catch((err) => {
+      console.error("SW registration error:", err);
+    });
+}
+
+</script>
+<script type="module" src="firebase-config.js"></script>
+
+     
+</body>
+</html>
+
+

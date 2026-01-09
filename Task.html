@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📊 StudMate — My Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --text: #f1f5f9;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      /* background: linear-gradient(to right, #00c6ff, #0072ff); */
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      background: url("home(imp).jpg") no-repeat center center/cover;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .dashboard {
+      width: 600px;
+      /* background: #f9f9f9f3; */
+      background-color: rgba(0, 0, 0, 0.786);
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      padding: 25px;
+      color:white
+
+    }
+    h2 { text-align: center; font-size: 24px; margin-bottom: 20px; font-weight: 600; }
+    .profile-card, .task-section {
+      /* background: #fff; */
+      border-radius: 15px;
+      padding: 15px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    .profile-card h3, .task-section h3 { font-size: 16px; color: #3b82f6; margin-bottom: 10px; }
+    .profile-card p, ul { font-size: 14px; margin: 4px 0; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h2>📌 My Dashboard</h2>
+
+    <div class="profile-card" id="profileInfo">
+      <h3>👤 Profile Info</h3>
+      <p>Loading profile info...</p>
+    </div>
+
+    <div class="task-section">
+      <h3>📅 Daily Tasks</h3>
+      <ul id="Daily"><li>No tasks yet</li></ul>
+    </div>
+
+    <div class="task-section">
+      <h3>📅 Weekly Tasks</h3>
+      <ul id="Weekly"><li>No tasks yet</li></ul>
+    </div>
+
+    <div class="task-section">
+      <h3>📅 Monthly Tasks</h3>
+      <ul id="Monthly"><li>No tasks yet</li></ul>
+    </div>
+
+    <div class="task-section">
+      <h3>📝 Own Tasks</h3>
+      <ul id="Own"><li>No tasks yet</li></ul>
+    </div>
+
+    <div class="task-section">
+      <h3>📚 Subject Tasks</h3>
+      <ul id="Subject"><li>No tasks yet</li></ul>
+    </div>
+
+    <div class="task-section">
+      <h3>⏰ Time Blocks</h3>
+      <ul id="timeBlocks"><li>No tasks yet</li></ul>
+    </div>
+
+    <div class="task-section">
+      <h3>⭐ Pinned Tasks</h3>
+      <ul id="PinnedTasks"><li>No tasks yet</li></ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFirestore, collection, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt68xNiWU25HsWC2rsJfn0YlmCTd9Asbs",
+      authDomain: "studmate-e1527.firebaseapp.com",
+      projectId: "studmate-e1527",
+      storageBucket: "studmate-e1527.appspot.com",
+      messagingSenderId: "156725135850",
+      appId: "1:156725135850:web:998c70a754ec3bbdb14a93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    function formatTask(data, section) {
+      if (section === "Daily" && data.task) return data.task;
+      if (section === "weeklyTasks") return `${data.title} — ${data.date || ""} ${data.time || ""} (${data.day || ""})`;
+      if (section === "Monthly") return `${data.title} — ${data.date || ""} at ${data.time || ""} — progress: ${data.progress || 0}%`;
+      if (section === "Own") return `${data.task} — Study at ${data.time}`;
+      if (section === "Subject") return `${data.name} — due ${data.date || ""} — progress: ${data.progress || 0}%`;
+      if (section === "timeBlocks") return `${data.name} — ${data.category || ""} at ${data.time || ""}`;
+      if (section === "PinnedTasks") return `⭐ ${data.text} — priority: ${data.priority || "normal"} — due ${data.due || "N/A"} — completed: ${data.completed ? "Yes" : "No"}`;
+      return JSON.stringify(data);
+    }
+
+    function loadTasks(userId, section, listId) {
+      const colRef = collection(db, `profiles/${userId}/${section}`);
+      onSnapshot(colRef, (snapshot) => {
+        const list = document.getElementById(listId);
+        list.innerHTML = "";
+        if (snapshot.empty) list.innerHTML = "<li>No tasks yet</li>";
+        snapshot.forEach(docSnap => {
+          const li = document.createElement("li");
+          li.textContent = formatTask(docSnap.data(), section);
+          list.appendChild(li);
+        });
+      });
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) return;
+
+      const userId = user.uid;
+
+      // Profile card
+      const profileRef = doc(db, "profiles", userId);
+      onSnapshot(profileRef, (docSnap) => {
+        const data = docSnap.data() || {};
+        const infoDiv = document.getElementById("profileInfo");
+        infoDiv.innerHTML = `
+          <h3>👤 Profile Info</h3>
+          <p><strong>Email:</strong> ${data.email || "N/A"}</p>
+          <p><strong>SGPA:</strong> ${data.sgpa || "N/A"}</p>
+          <p><strong>Course:</strong> ${data.course || "N/A"}</p>
+        `;
+      });
+
+      // Load tasks
+      loadTasks(userId, "Daily", "Daily");
+      loadTasks(userId, "weeklyTasks", "Weekly");
+      loadTasks(userId, "Monthly", "Monthly"); // email ignored here
+      loadTasks(userId, "Own", "Own");
+      loadTasks(userId, "Subject", "Subject");
+      loadTasks(userId, "timeBlocks", "timeBlocks");
+      loadTasks(userId, "PinnedTasks", "PinnedTasks");
+    });
+  </script>
+</body>
+</html>
